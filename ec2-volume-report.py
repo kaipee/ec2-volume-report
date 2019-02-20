@@ -35,15 +35,16 @@ g_debug = parser.add_argument_group('DEBUG')
 
 # Search filters
 g_filters.add_argument("-r", "--region", action='append', type=str, help="Only volumes in Region(s) REGION, accepts multiple values. ALWAYS DISPLAYED.")
-g_filters.add_argument("-s", "--status", choices=['available', 'in-use'], action='append', type=str, help="Only volumes with status STATUS, accepts multiple values. ALWAYS DISPLAYED.")
+state_args = ['available', 'in-use']
+g_filters.add_argument("-s", "--state", choices=state_args, action='append', type=str, help="Only volumes with status STATUS, accepts multiple values. ALWAYS DISPLAYED.")
 
 # Display options (value printed if argument passed)
 g_display.add_argument("--colour", help="Colorize the output.", action="store_true")
 
 # Debug filters
 #g_debug.add_argument("--debug-args", help="Debug, print all args", action="store_true")
-#g_debug.add_argument("--debug-filters", help="Debug, print all filters", action="store_true")
-#g_debug.add_argument("--debug-dict", help="Debug, print the ec2data dictionary", action="store_true")
+g_debug.add_argument("--debug-filters", help="Debug, print all filters", action="store_true")
+g_debug.add_argument("--debug-dict", help="Debug, print the ec2data dictionary", action="store_true")
 g_debug.add_argument("-R", "--region-print", action='store_true', help="Print all publicly available region names.")
 g_debug.add_argument("-Z", "--zone-print", action='store_true', help="Print all availablity zones and status.")    
 
@@ -54,6 +55,25 @@ args = parser.parse_args()
 ##############################
 # Define the various functions
 ##############################
+
+def get_filters():
+    global filters
+    filters = {}
+
+    if args.state:
+        arg_state = args.state    # Set the instance state depending on -s --state argument
+    else:
+        arg_state = state_args    # Set the instance state to a default list of all states
+    filter_state = {
+    'Name': 'status',
+    'Values': arg_state
+    }
+    filters["Status"] = filter_state
+
+    if not args.debug_filters:
+        # Return filters
+        for value in filters.values():
+            return value
 
 def get_region():
     global region_list
@@ -88,7 +108,12 @@ def get_volumes():
     ec2data = dict()
     for region in arg_region:
         ec2 = boto3.resource('ec2', str.lower(region)) 
-        for volume in ec2.volumes.all():
+        volumes = ec2.volumes.filter(
+            Filters=[
+                get_filters()
+            ]
+        )
+        for volume in volumes: 
             ec2data[volume.id] = {
                 'Region': str.lower(region),
                 'Volume ID': volume.id,
@@ -123,6 +148,47 @@ if args.region_print:
     print('Retrieved from AWS')
     print('------------------')
     volumes_print = False
+
+if args.debug_filters:
+    get_filters()
+    # Print the list of filters and values
+    if args.region:
+        print('-----------------')
+        print('FILTERED REGIONS')
+        print('-----------------')
+        for region in arg_region:
+            print(str.lower(region))
+        print("\n")
+    volumes_print = False
+    print("-----------")
+    print("FILTER LIST")
+    print("-----------")
+    print(filters)    # Print the full currently assigned filters dict
+    
+    print("\n-------------")
+    print("FILTER KEYS")
+    print("-------------")
+    for value in filters.keys():    # Print each currently defined filter key
+        print(value)
+    
+    print("\n-------------")
+    print("FILTER VALUES")
+    print("-------------")
+    for value in filters.values():    # Print each currently defined filter value
+        pp(value)
+    
+if args.debug_dict:
+    get_volume()
+    print("------------------")
+    print("EC2DATA DICTIONARY")
+    print("------------------")
+    pp(ec2data)
+    for i_id, i_v in ec2data.items():
+        print("-------------------")
+        print(i_id)
+        print("-------------------")
+        for title, attribute in i_v.items():
+            print(title, attribute, sep=" : ")
 
 # Print print all Availability Zones if -Z flag is set                                                                                                                                                                                         
 if args.zone_print:

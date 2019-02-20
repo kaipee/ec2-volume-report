@@ -122,6 +122,17 @@ def get_volumes():
                 'Size': str(volume.size)
             }
 
+            if volume.state:
+                if args.colour:
+                    if volume.state == 'available':
+                        ec2data[volume.id].update({'Status': bcolors.OKGREEN + volume.state + bcolors.ENDC})
+                    elif volume.state == 'in-use':
+                        ec2data[volume.id].update({'Status': bcolors.FAIL + volume.state + bcolors.ENDC})
+                    else:
+                        ec2data[volume.id].update({'Status': volume.state})
+                else:
+                    ec2data[volume.id].update({'Status': volume.state})
+
             print("\t".join(ec2data[volume.id].values()))
 
 ##############

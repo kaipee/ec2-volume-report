@@ -1,3 +1,4 @@
+from pprint import pprint as pp
 from datetime import datetime, timedelta
 import boto3
 import os
@@ -18,6 +19,7 @@ class bcolors:
 # IAM 'ec2report' credentials should be stored as a boto3 profile (example: ~/.aws/credentials)
 os.environ['AWS_PROFILE'] = 'script_ec2volumereport'   # Define which profile to connect with
 session = boto3.Session(profile_name='script_ec2volumereport')   # Create a boto3 session using the defined profile
+
 
 ######################
 # Set up the arguments
@@ -51,7 +53,7 @@ args = parser.parse_args()
 ##############################
 # Define the various functions
 ##############################
- 
+
 def get_region():
     global region_list
     # Obtain all publicly accessible regions for this session
@@ -62,28 +64,35 @@ def get_zone():
     global zone_list
     print('--------------------')
     for region in arg_region:
-       print('REGION : ' + region)
-       print('--------------------')
-       client = boto3.client('ec2', region)
-       # Obtain all accessible availablility zones for this session
-       zone_list = client.describe_availability_zones()['AvailabilityZones']
-       for zone in zone_list:
-           if zone['State'] == 'available':
-               if args.colour:
-                   print(zone['ZoneName'] + " : " + bcolors.OKGREEN + zone['State'] + bcolors.ENDC)
-               else:
-                   print(zone['ZoneName'] + " : " + zone['State'])
-           else:
-               if args.color:
-                   print(zone['ZoneName'] + " : " + bcolors.FAIL + zone['State'] + bcolors.ENDC)
-               else:
-                   print(zone['ZoneName'] + " : " + zone['State'])
-       print('--------------------')
+        print('REGION : ' + region)
+        print('--------------------')
+        client = boto3.client('ec2', region)
+        # Obtain all accessible availablility zones for this session
+        zone_list = client.describe_availability_zones()['AvailabilityZones']
+        for zone in zone_list:
+            if zone['State'] == 'available':
+                if args.colour:
+                    print(zone['ZoneName'] + " : " + bcolors.OKGREEN + zone['State'] + bcolors.ENDC)
+                else:
+                    print(zone['ZoneName'] + " : " + zone['State'])
+            else:
+                if args.color:
+                    print(zone['ZoneName'] + " : " + bcolors.FAIL + zone['State'] + bcolors.ENDC)
+                else:
+                    print(zone['ZoneName'] + " : " + zone['State'])
+        print('--------------------')
+
+def get_volumes():
+    for region in arg_region:
+        ec2 = boto3.resource('ec2', str.lower(region)) 
+        cloudwatch = boto3.client('cloudwatch', str.lower(region))
 
 
 ##############
 # Do the stuff                                                                                                                                                                                                                                
 ##############
+
+volumes_print = True
 
 # Check if --region set and assign variable values
 if args.region:
@@ -102,10 +111,15 @@ if args.region_print:
     print('------------------')
     print('Retrieved from AWS')
     print('------------------')
+    volumes_print = False
 
 # Print print all Availability Zones if -Z flag is set                                                                                                                                                                                         
 if args.zone_print:
     get_zone()
+    volumes_print = False
+
+if volumes_print:
+    get_volumes()
 
 #-----------------------------
 

@@ -34,7 +34,8 @@ g_display = parser.add_argument_group('DISPLAY OPTIONS')
 g_debug = parser.add_argument_group('DEBUG')
 
 # Search filters
-g_filters.add_argument("-r", "--region", action='append', type=str, help="Only instances in Region(s) REGION, accepts multiple values. ALWAYS DISPLAYED.")
+g_filters.add_argument("-r", "--region", action='append', type=str, help="Only volumes in Region(s) REGION, accepts multiple values. ALWAYS DISPLAYED.")
+g_filters.add_argument("-s", "--status", choices=['available', 'in-use'], action='append', type=str, help="Only volumes with status STATUS, accepts multiple values. ALWAYS DISPLAYED.")
 
 # Display options (value printed if argument passed)
 g_display.add_argument("--colour", help="Colorize the output.", action="store_true")
@@ -83,10 +84,18 @@ def get_zone():
         print('--------------------')
 
 def get_volumes():
+    global ec2data
+    ec2data = dict()
     for region in arg_region:
         ec2 = boto3.resource('ec2', str.lower(region)) 
-        cloudwatch = boto3.client('cloudwatch', str.lower(region))
+        for volume in ec2.volumes.all():
+            ec2data[volume.id] = {
+                'Region': str.lower(region),
+                'Volume ID': volume.id,
+                'Status': volume.state,
+            }
 
+            print("\t".join(ec2data[volume.id].values()))
 
 ##############
 # Do the stuff                                                                                                                                                                                                                                

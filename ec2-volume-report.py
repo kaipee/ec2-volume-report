@@ -93,6 +93,7 @@ def get_volumes():
                 'Region': str.lower(region),
                 'Volume ID': volume.id,
                 'Status': volume.state,
+                'Created': str(volume.create_time),
             }
 
             print("\t".join(ec2data[volume.id].values()))

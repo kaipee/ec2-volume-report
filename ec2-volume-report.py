@@ -40,6 +40,7 @@ g_filters.add_argument("-s", "--state", choices=state_args, action='append', typ
 
 # Display options (value printed if argument passed)
 g_display.add_argument("--colour", help="Colorize the output.", action="store_true")
+g_display.add_argument("--summary", help="Append a summary to the output.", action="store_true")
 
 # Debug filters
 #g_debug.add_argument("--debug-args", help="Debug, print all args", action="store_true")
@@ -134,6 +135,10 @@ def get_volumes():
                     ec2data[volume.id].update({'Status': volume.state})
 
             print("\t".join(ec2data[volume.id].values()))
+
+    if args.summary:
+        print('------------------')
+        print('Total Volumes : ' + str(len(ec2data)))
 
 ##############
 # Do the stuff                                                                                                                                                                                                                                

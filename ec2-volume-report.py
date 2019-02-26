@@ -121,10 +121,22 @@ def get_volumes():
                 'Region': str.lower(region),
                 'Zone': volume.availability_zone,
                 'Volume ID': volume.id,
+                'Type': volume.volume_type,
                 'Status': volume.state,
                 'Created': str(volume.create_time),
-                'Size': str(volume.size)
+                'Size': str(volume.size),
             }
+
+            tags = volume.tags
+            if tags :
+                for tag in tags:
+                    key = tag['Key']
+                    if str.lower(key) == 'owner':
+                        owner = tag['Value']
+                        ec2data[volume.id].update({'Owner' : owner})
+                    if str.lower(key) == 'project':
+                        project = tag['Value']
+                        ec2data[volume.id].update({'Project' : project})
 
             if volume.state:
                 if args.colour:

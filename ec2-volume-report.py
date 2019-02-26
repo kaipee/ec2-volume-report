@@ -60,6 +60,7 @@ args = parser.parse_args()
 def get_filters():
     global filters
     filters = {}
+    filters.clear()
 
     if args.state:
         arg_state = args.state    # Set the instance state depending on -s --state argument
@@ -107,6 +108,7 @@ def get_zone():
 def get_volumes():
     global ec2data
     ec2data = dict()
+    ec2data.clear()
     for region in arg_region:
         ec2 = boto3.resource('ec2', str.lower(region)) 
         volumes = ec2.volumes.filter(

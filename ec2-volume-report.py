@@ -119,6 +119,7 @@ def get_volumes():
         for volume in volumes: 
             ec2data[volume.id] = {
                 'Region': str.lower(region),
+                'Zone': volume.availability_zone,
                 'Volume ID': volume.id,
                 'Status': volume.state,
                 'Created': str(volume.create_time),

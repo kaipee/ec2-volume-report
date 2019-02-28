@@ -2,6 +2,8 @@ from pprint import pprint as pp
 import boto3
 import os
 import argparse
+import string
+import random
 
 # Define output color classes
 class bcolors:
@@ -319,10 +321,20 @@ def get_volumes():
         print('Total Volumes : ' + str(len(ec2data)))
 
     if args.delete:
+        passphrase = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(4))
+        print("\n")
+        print(bcolors.WARNING + "!! WARNING : THIS IS NOT REVERSABLE !!" + bcolors.ENDC)
+        print("Please enter the following passphrase to DELETE ALL LISTED VOLUMES : " + passphrase)
+        print(bcolors.WARNING + "!! WARNING : THIS IS NOT REVERSABLE !!" + bcolors.ENDC)
+        print("\n")
+        answer = ''
+        while answer != passphrase:
+            answer = input("Passphrase: ").strip()
+
         for vol in ec2data:
             response = volume.delete(
                 VolumeId=vol,
-                DryRun=True
+                DryRun=args.dry_run
             )
             print(response)
 

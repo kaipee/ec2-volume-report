@@ -31,7 +31,7 @@ parser = argparse.ArgumentParser(description="Retrieve a list of AWS EC2 instanc
 
 g_filters = parser.add_argument_group('SEARCH FILTERS')
 g_display = parser.add_argument_group('DISPLAY OPTIONS')
-g_action= parser.add_argument_group('ACTIONS')
+g_action = parser.add_argument_group('ACTIONS')
 g_debug = parser.add_argument_group('DEBUG')
 
 # Search filters
@@ -51,6 +51,7 @@ g_filters.add_argument("-PS", "--project-exact-sentence", action='append', help=
 g_filters.add_argument("-r", "--region", action='append', type=str, help="Only instances in Region(s) REGION, accepts multiple values. ALWAYS DISPLAYED.")
 state_args = ['creating', 'available', 'in-use', 'deleting', 'deleted', 'error']
 g_filters.add_argument("-s", "--state", action='append', choices=state_args, help="Only instances with Instance State STATE, accepts multiple values. ALWAYS DISPLAYED.")
+g_filters.add_argument("-S", "--size", action='append', help="Only instances with Instance State STATE, accepts multiple values. ALWAYS DISPLAYED.")
 g_filters.add_argument("-x", "--custom-tag", action='append', help="(Loose) Only instances where tag is like CUSTOM_TAG, accepts multiple values.")
 g_filters.add_argument("-z", "--availability-zone", action='append', help="(Loose) Only instances contained in availability zone ZONE, accepts multiple values.")
 
@@ -168,16 +169,6 @@ def get_filters(): # Filter instance results by AWS API_Filter attributes that a
 
     ###################################################################
     
-    # Filter for instance state (default to all)
-    if args.state:
-        arg_state = args.state    # Set the instance state depending on -s --state argument
-    else:
-        arg_state = state_args    # Set the instance state to a default list of all states
-    filters["status"] = {
-        'Name': 'status',
-        'Values': arg_state
-    }
-
     # Filter for custom tags if provided
     if args.custom_tag:
         filters["cust_tag"] = {
@@ -192,10 +183,28 @@ def get_filters(): # Filter instance results by AWS API_Filter attributes that a
             'Values': args.availability_zone
         }
     
+    # Filter for specific volume size if provided
+    if args.size:
+        filters["size"] = {
+            'Name': 'size',
+            'Values': args.size
+        }
+    
+    # Filter for instance state (default to all)
+    if args.state:
+        arg_state = args.state    # Set the instance state depending on -s --state argument
+    else:
+        arg_state = state_args    # Set the instance state to a default list of all states
+    filters["status"] = {
+        'Name': 'status',
+        'Values': arg_state
+    }
+
     if not args.debug_filters:
-        # Return filters
+        Filters = []
         for value in filters.values():
-            return value
+            Filters.append(value)
+        return Filters
 
 
 def get_region():
@@ -232,14 +241,12 @@ def get_volumes():
     ec2data.clear()
     ctags = dict()    # Declare dict to store all custom tag key:value pairs
     ctags.clear()
-    
+
     for region in arg_region:
         ec2 = boto3.resource('ec2', str.lower(region))   # Print a delimiter to identify the current region
         volumes = ec2.volumes.filter(   # Filter the list of returned instance - https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.ServiceResource.instances 
             # List of available filters : https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html
-            Filters=[
-                get_filters()
-            ]
+            Filters=get_filters()
         )
         for volume in volumes:
             # List of available attributes : https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#instance

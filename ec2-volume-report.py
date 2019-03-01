@@ -49,6 +49,7 @@ g_filters.add_argument("-r", "--region", action='append', help=" Return only vol
 g_filters.add_argument("-s", "--size", action='append', help=" Return only volumes with exact size SIZE, accepts multiple values.")
 g_filters.add_argument("-S", "--status", action='append', choices=status_args, help="Return only volumes with status STATE, accepts multiple values.")
 g_filters.add_argument("-t", "--tag", action='append', help="Return only volumes where tag Key is exactly TAG, accepts multiple values.")
+g_filters.add_argument("-T", "--type", action='append', choices=['gp2', 'io1', 'st1', 'sc1', 'standard'], help="Return only volumes where type is exactly TYPE, accepts multiple values.")
 g_filters.add_argument("-z", "--zone", action='append', help="Return only volumes in availability zone ZONE, accepts multiple values.")
 
 # Display options (value printed if argument passed)
@@ -91,6 +92,13 @@ def get_aws_filters(): # Filter instance results by AWS API_Filter attributes th
         filters["tag"] = {
             'Name': 'tag-key',
             'Values': args.tag
+        }
+    
+    # Filter for volume type if provided
+    if args.type:
+        filters["type"] = {
+            'Name': 'volume-type',
+            'Values': args.type
         }
     
     # Filter for zones if provided

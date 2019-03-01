@@ -208,7 +208,6 @@ def get_filters(): # Filter instance results by AWS API_Filter attributes that a
             Filters.append(value)
         return Filters
 
-
 def get_region():
     global region_list
     # Obtain all publicly accessible regions for this session
@@ -262,7 +261,7 @@ def get_volumes():
                     'Project': bcolors.WARNING + "NO_PROJECT" + bcolors.ENDC,
                     'Volume ID': volume.id,
                     'Type': volume.volume_type,
-                    'State': bcolors.WARNING + "STATE_UND" + bcolors.ENDC,
+                    'Status': bcolors.WARNING + "STATE_UND" + bcolors.ENDC,
                     'Created': str(volume.create_time),
                     'Size': str(volume.size),
                     }
@@ -275,7 +274,7 @@ def get_volumes():
                     'Project': "NO_PROJECT",
                     'Volume ID': volume.id,
                     'Type': volume.volume_type,
-                    'State': "STATE_UND",
+                    'Status': "STATE_UND",
                     'Created': str(volume.create_time),
                     'Size': str(volume.size),
                     }

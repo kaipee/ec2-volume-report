@@ -37,25 +37,19 @@ g_action = parser.add_argument_group('ACTIONS')
 g_debug = parser.add_argument_group('DEBUG')
 
 # Search filters
+status_args = ['creating', 'available', 'in-use', 'deleting', 'deleted', 'error']
 g_filters.add_argument("-i", "--id", action='append', help="Return only volumes matching ID. Accepts multiple values.")
-#TODO : parser.add_argument("-nu", "--nameupper", type=str, help="(Loose) All instances where 'Name' tag contains NAME, accepts multiple values.")
-g_filters.add_argument("-NL", "--name-exact-lower", action='append', help="(Strict) Only instances where 'name' tag matches NAME exactly, accepts multiple values.")
-g_filters.add_argument("-NU", "--name-exact-upper", action='append', help="(Strict) Only instances where 'NAME' tag matches NAME exactly, accepts multiple values.")
-g_filters.add_argument("-NS", "--name-exact-sentence", action='append', help="(Strict) Only instances where 'Name' tag matches NAME exactly, accepts multiple values.")
-#TODO : parser.add_argument("-o", "--owner", type=str, help="(Loose) All instances where 'Owner' tag contains OWNER, entered as a comma separated list. ALWAYS DISPLAYED.")
-g_filters.add_argument("-OL", "--owner-exact-lower", action='append', help="(Strict) Only instances where 'owner' tag matches OWNER exactly, accepts multiple values.")
-g_filters.add_argument("-OU", "--owner-exact-upper", action='append', help="(Strict) Only instances where 'OWNER' tag matches OWNER exactly, accepts multiple values.")
-g_filters.add_argument("-OS", "--owner-exact-sentence", action='append', help="(Strict) Only instances where 'Owner' tag matches OWNER exactly, accepts multiple values.")
-#TODO : parser.add_argument("-p", "--project", type=str, help="(Loose) All instances where 'Project' tag contains PROJECT, accpets multiple values. ALWAYS DISPLAYED.")
-g_filters.add_argument("-PL", "--project-exact-lower", action='append', help="(Strict) Only instances where 'project' tag matches PROJECT exactly, accepts multiple values.")
-g_filters.add_argument("-PU", "--project-exact-upper", action='append', help="(Strict) Only instances where 'PROJECT' tag matches PROJECT exactly, accepts multiple values.")
-g_filters.add_argument("-PS", "--project-exact-sentence", action='append', help="(Strict) Only instances where 'Project' tag matches PROJECT exactly, accepts multiple values.")
-g_filters.add_argument("-r", "--region", action='append', type=str, help="Only instances in Region(s) REGION, accepts multiple values. ALWAYS DISPLAYED.")
-state_args = ['creating', 'available', 'in-use', 'deleting', 'deleted', 'error']
-g_filters.add_argument("-s", "--state", action='append', choices=state_args, help="Only instances with Instance State STATE, accepts multiple values. ALWAYS DISPLAYED.")
-g_filters.add_argument("-S", "--size", action='append', help="Only instances with Instance State STATE, accepts multiple values. ALWAYS DISPLAYED.")
-g_filters.add_argument("-x", "--custom-tag", action='append', help="(Loose) Only instances where tag is like CUSTOM_TAG, accepts multiple values.")
-g_filters.add_argument("-z", "--availability-zone", action='append', help="(Loose) Only instances contained in availability zone ZONE, accepts multiple values.")
+#g_filters.add_argument("-n", "--name", action='append', help="Return only volumes where 'name' tag value contains NAME, accepts multiple values.")
+#g_filters.add_argument("-N", "--name-exact", action='append', help="Return only volumes where 'name' tag value matches NAME exactly, accepts multiple values.")
+#g_filters.add_argument("-o", "--owner", action='append', help="Return only volumes where 'owner' tag value contains OWNER, accepts multiple values.")
+#g_filters.add_argument("-O", "--owner-exact", action='append', help="Return only volumes where 'owner' tag value matches OWNER exactly, accepts multiple values.")
+#g_filters.add_argument("-p", "--project", action='append', help="Return only volumes where 'project' tag value contains PROJECT, accepts multiple values.")
+#g_filters.add_argument("-P", "--project-exact", action='append', help="Return only volumes where 'project' tag value matches PROJECT exactly, accepts multiple values.")
+g_filters.add_argument("-r", "--region", action='append', help=" Return only volumes in Region(s) REGION, accepts multiple values.")
+g_filters.add_argument("-s", "--size", action='append', help=" Return only volumes with exact size SIZE, accepts multiple values.")
+g_filters.add_argument("-S", "--status", action='append', choices=status_args, help="Return only volumes with status STATE, accepts multiple values.")
+g_filters.add_argument("-t", "--tag", action='append', help="Return only volumes where tag Key is exactly TAG, accepts multiple values.")
+g_filters.add_argument("-z", "--zone", action='append', help="Return only volumes in availability zone ZONE, accepts multiple values.")
 
 # Display options (value printed if argument passed)
 g_display.add_argument("--colour", help="Colorize the output.", action="store_true")
@@ -84,7 +78,6 @@ def get_custom_filters():
 def get_aws_filters(): # Filter instance results by AWS API_Filter attributes that are not Tags and do not require fuzzy searching (tag filtering should be case-insensitive)
     global filters
     filters = {}
-    filters.clear()
     
     # Filter for Instance ID if provided
     if args.id:
@@ -92,99 +85,19 @@ def get_aws_filters(): # Filter instance results by AWS API_Filter attributes th
             'Name': 'volume-id',
             'Values': args.id
         }
-
-    ###################################################################    
-    # Quick and dirty - AWS API_FILTER is explicitly case-sensitive
-    #                   and do not accept logic (no OR, explicitly AND).
-    #                   Tag keys may be upper, lower, or other case.
-    #                   Case-insensitive filter should be applied
-    #                   programmatically after all results are returned
-    ###################################################################
-    # Tag : name|NAME|Name
-    ###################################################################
-    # Filter for Tag : name
-    if args.name_exact_lower:
-        filters["name_exact_low"] = {
-            'Name': 'tag:name',
-            'Values': args.name_exact_lower
-        }
-
-    # Filter for Tag : NAME
-    if args.name_exact_upper:
-        filters["name_exact_upp"] = {
-            'Name': 'tag:NAME',
-            'Values': args.name_exact_upper
-        }
-
-    # Filter for Tag : Name
-    if args.name_exact_sentence:
-        filters["name_exact_sent"] = {
-            'Name': 'tag:Name',
-            'Values': args.name_exact_sentence
-        }
-
-    ###################################################################
-    # Tag : owner|OWNER|Owner
-    ###################################################################
-    # Filter for Tag : owner 
-    if args.owner_exact_lower:
-        filters["owner_exact_low"] = {
-            'Name': 'tag:owner',
-            'Values': args.owner_exact_lower
-        }
-
-    # Filter for Tag : OWNER
-    if args.owner_exact_upper:
-        filters["owner_exact_upp"] = {
-            'Name': 'tag:OWNER',
-            'Values': args.owner_exact_upper
-        }
-
-    # Filter for Tag : Owner
-    if args.owner_exact_sentence:
-        filters["owner_exact_sent"] = {
-            'Name': 'tag:Owner',
-            'Values': args.owner_exact_sentence
-        }
-
-    ###################################################################
-    # Tag : project|PROJECT|Project
-    ###################################################################
-    # Filter for Tag : project 
-    if args.project_exact_lower:
-        filters["project_exact_low"] = {
-            'Name': 'tag:project',
-            'Values': args.project_exact_lower
-        }
-
-    # Filter for Tag : PROJECT
-    if args.project_exact_upper:
-        filters["project_exact_upp"] = {
-            'Name': 'tag:PROJECT',
-            'Values': args.project_exact_upper
-        }
-
-    # Filter for Tag : Project
-    if args.project_exact_sentence:
-        filters["project_exact_sent"] = {
-            'Name': 'tag:Project',
-            'Values': args.project_exact_sentence
-        }
-
-    ###################################################################
     
     # Filter for custom tags if provided
-    if args.custom_tag:
-        filters["cust_tag"] = {
+    if args.tag:
+        filters["tag"] = {
             'Name': 'tag-key',
-            'Values': args.custom_tag
+            'Values': args.tag
         }
     
     # Filter for zones if provided
-    if args.availability_zone:
+    if args.zone:
         filters["zone"] = {
             'Name': 'availability-zone',
-            'Values': args.availability_zone
+            'Values': args.zone
         }
     
     # Filter for specific volume size if provided
@@ -194,14 +107,14 @@ def get_aws_filters(): # Filter instance results by AWS API_Filter attributes th
             'Values': args.size
         }
     
-    # Filter for instance state (default to all)
-    if args.state:
-        arg_state = args.state    # Set the instance state depending on -s --state argument
+    # Filter for instance status (default to all)
+    if args.status:
+        arg_status = args.status    # Set the instance status depending on -s --status argument
     else:
-        arg_state = state_args    # Set the instance state to a default list of all states
+        arg_status = status_args    # Set the instance status to a default list of all states
     filters["status"] = {
         'Name': 'status',
-        'Values': arg_state
+        'Values': arg_status
     }
 
     if not args.debug_filters:
@@ -241,9 +154,6 @@ def get_zone():
 def get_volumes():
     global ec2data
     ec2data = dict()   # Declare dict to be used for storing instance details later
-    ec2data.clear()
-    ctags = dict()    # Declare dict to store all custom tag key:value pairs
-    ctags.clear()
 
     for region in arg_region:
         ec2 = boto3.resource('ec2', str.lower(region))   # Print a delimiter to identify the current region
@@ -257,9 +167,9 @@ def get_volumes():
                 'Region': 'NO_REGION',
                 'Zone': 'NO_ZONE',
                 'Volume ID': 'NO_VOL_ID',
-                'Status': "STATE_UND",
-                'Type': 'TYP_UND',
                 'Size': 'SIZE_UND',
+                'Type': 'TYP_UND',
+                'Status': "STATE_UND",
                 'Name': 'NO_NAME',
                 'Owner': 'NO_OWNER',
                 'Project': 'NO_PROJECT',
@@ -285,9 +195,8 @@ def get_volumes():
                 ec2data[volume.id].update({'Size': str(volume.size)}) # Store the Volume Size (GB)
 
             # Add tag information to dictionary
-            tags = volume.tags
-            if tags :
-                for tag in tags:
+            if volume.tags:
+                for tag in volume.tags:
                     key = tag['Key']
                     if str.lower(key) == 'name':    # Check for any tags with a value of Name or name
                         name = tag['Value']   # Set name variable to be equal to the value of the Name/name tag
@@ -299,36 +208,40 @@ def get_volumes():
                         project = tag['Value']
                         ec2data[volume.id].update({'Project': project})
     
-                    if args.custom_tag:   # Loop over the list of custom tags if present
-                        for custom_tag in args.custom_tag:
+                    if args.tag:   # Loop over the list of custom tags if present
+                        for custom_tag in args.tag:
                             if str.lower(tag['Key']) == str.lower(custom_tag):
                                 ec2data[volume.id].update({tag['Key']: tag['Value']})
 
-            # Print results line by line
-            if not args.debug_dict:
-                print("\t".join(ec2data[volume.id].values()))
+    print("\t".join(ec2data[volume.id].keys()))
+
+    # Print results line by line
+    if not args.debug_dict:
+        for vol in ec2data:
+            print("\t".join(ec2data[vol].values()))
 
     if args.summary:
         print('------------------')
         print('Total Volumes : ' + str(len(ec2data)))
 
-    if args.delete:
-        passphrase = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(4))
-        print("\n")
-        print(bcolors.WARNING + "!! WARNING : THIS IS NOT REVERSABLE !!" + bcolors.ENDC)
-        print("Please enter the following passphrase to DELETE ALL LISTED VOLUMES : " + passphrase)
-        print(bcolors.WARNING + "!! WARNING : THIS IS NOT REVERSABLE !!" + bcolors.ENDC)
-        print("\n")
-        answer = ''
-        while answer != passphrase:
-            answer = input("Passphrase: ").strip()
+def delete_volumes():
+    get_volumes()
+    passphrase = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(4))
+    print("\n")
+    print(bcolors.WARNING + "!! WARNING : THIS IS NOT REVERSABLE !!" + bcolors.ENDC)
+    print("Please enter the following passphrase to DELETE ALL LISTED VOLUMES : " + passphrase)
+    print(bcolors.WARNING + "!! WARNING : THIS IS NOT REVERSABLE !!" + bcolors.ENDC)
+    print("\n")
+    answer = ''
+    while answer != passphrase:
+        answer = input("Passphrase: ").strip()
 
-        for vol in ec2data:
-            response = volume.delete(
-                VolumeId=vol,
-                DryRun=args.dry_run
-            )
-            print(response)
+    for vol in ec2data:
+        response = volume.delete(
+            VolumeId=vol,
+            DryRun=args.dry_run
+        )
+        print(response)
 
 ##############
 # Do the stuff
@@ -407,3 +320,6 @@ if args.zone_print:
 if volume_print:
     # Go ahead and output the instance details if not checking for a list of regions
     get_volumes()
+
+if args.delete:
+    delete_volumes()

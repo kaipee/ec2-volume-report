@@ -31,26 +31,29 @@ session = boto3.Session(profile_name='script_ec2volumereport')   # Create a boto
 # Search filters
 parser = argparse.ArgumentParser(description="Retrieve a list of AWS EC2 instances.")
 
-g_filters = parser.add_argument_group('SEARCH FILTERS')
+g_awsfilters = parser.add_argument_group('AWS SEARCH FILTERS')
+g_filters = parser.add_argument_group('CUSTOM SEARCH FILTERS')
 g_display = parser.add_argument_group('DISPLAY OPTIONS')
 g_action = parser.add_argument_group('ACTIONS')
 g_debug = parser.add_argument_group('DEBUG')
 
-# Search filters
+# AWS Search filters
 status_args = ['creating', 'available', 'in-use', 'deleting', 'deleted', 'error']
 g_filters.add_argument("-i", "--id", action='append', help="Return only volumes matching ID. Accepts multiple values.")
-#g_filters.add_argument("-n", "--name", action='append', help="Return only volumes where 'name' tag value contains NAME, accepts multiple values.")
-#g_filters.add_argument("-N", "--name-exact", action='append', help="Return only volumes where 'name' tag value matches NAME exactly, accepts multiple values.")
-#g_filters.add_argument("-o", "--owner", action='append', help="Return only volumes where 'owner' tag value contains OWNER, accepts multiple values.")
-#g_filters.add_argument("-O", "--owner-exact", action='append', help="Return only volumes where 'owner' tag value matches OWNER exactly, accepts multiple values.")
-#g_filters.add_argument("-p", "--project", action='append', help="Return only volumes where 'project' tag value contains PROJECT, accepts multiple values.")
-#g_filters.add_argument("-P", "--project-exact", action='append', help="Return only volumes where 'project' tag value matches PROJECT exactly, accepts multiple values.")
 g_filters.add_argument("-r", "--region", action='append', help=" Return only volumes in Region(s) REGION, accepts multiple values.")
 g_filters.add_argument("-s", "--size", action='append', help=" Return only volumes with exact size SIZE, accepts multiple values.")
 g_filters.add_argument("-S", "--status", action='append', choices=status_args, help="Return only volumes with status STATE, accepts multiple values.")
 g_filters.add_argument("-t", "--tag", action='append', help="Return only volumes where tag Key is exactly TAG, accepts multiple values.")
 g_filters.add_argument("-T", "--type", action='append', choices=['gp2', 'io1', 'st1', 'sc1', 'standard'], help="Return only volumes where type is exactly TYPE, accepts multiple values.")
 g_filters.add_argument("-z", "--zone", action='append', help="Return only volumes in availability zone ZONE, accepts multiple values.")
+
+# Custom search filters
+g_filters.add_argument("-n", "--name", action='append', help="Return only volumes where 'name' tag value contains NAME, accepts multiple values.")
+#g_filters.add_argument("-N", "--name-exact", action='append', help="Return only volumes where 'name' tag value matches NAME exactly, accepts multiple values.")
+#g_filters.add_argument("-o", "--owner", action='append', help="Return only volumes where 'owner' tag value contains OWNER, accepts multiple values.")
+#g_filters.add_argument("-O", "--owner-exact", action='append', help="Return only volumes where 'owner' tag value matches OWNER exactly, accepts multiple values.")
+#g_filters.add_argument("-p", "--project", action='append', help="Return only volumes where 'project' tag value contains PROJECT, accepts multiple values.")
+#g_filters.add_argument("-P", "--project-exact", action='append', help="Return only volumes where 'project' tag value matches PROJECT exactly, accepts multiple values.")
 
 # Display options (value printed if argument passed)
 g_display.add_argument("--colour", help="Colorize the output.", action="store_true")
@@ -73,9 +76,6 @@ args = parser.parse_args()
 ##############################
 # Define the various functions
 ##############################
-def get_custom_filters():
-    custom_filters = {}
-
 def get_aws_filters(): # Filter instance results by AWS API_Filter attributes that are not Tags and do not require fuzzy searching (tag filtering should be case-insensitive)
     global filters
     filters = {}
@@ -131,6 +131,9 @@ def get_aws_filters(): # Filter instance results by AWS API_Filter attributes th
             Filters.append(value)
         return Filters
 
+def get_custom_filters():
+    custom_filters = {}
+
 def get_region():
     global region_list
     # Obtain all publicly accessible regions for this session
@@ -162,6 +165,7 @@ def get_zone():
 def get_volumes():
     global ec2data
     ec2data = dict()   # Declare dict to be used for storing instance details later
+    global volume
 
     for region in arg_region:
         ec2 = boto3.resource('ec2', str.lower(region))   # Print a delimiter to identify the current region
@@ -183,8 +187,8 @@ def get_volumes():
                 'Project': 'NO_PROJECT',
                 'Created': 'CREATION_UND',
                 }
-            # List of available attributes : https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#volume
             # Retrieve all instance attributes and assign desired attributes to dict that can be iterated over later
+            # List of available attributes : https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#volume
 
             # Add all standard volume info to dictionary
             ec2data[volume.id].update({'Region': str.lower(region)}) # Store the AWS Region of the volume
@@ -220,7 +224,7 @@ def get_volumes():
                         for custom_tag in args.tag:
                             if str.lower(tag['Key']) == str.lower(custom_tag):
                                 ec2data[volume.id].update({tag['Key']: tag['Value']})
-
+                                    
     print("\t".join(ec2data[volume.id].keys()))
 
     # Print results line by line
@@ -232,8 +236,18 @@ def get_volumes():
         print('------------------')
         print('Total Volumes : ' + str(len(ec2data)))
 
+    prepare_volumes()
+
+def prepare_volumes():
+    selectedKeys = list()
+
+#    for vol in ec2data:
+#        for (k, v) in ec2data[vol].items():
+#            if v == args.name:
+#                selectedKeys.append
+#            print(v)
+
 def delete_volumes():
-    get_volumes()
     passphrase = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(4))
     print("\n")
     print(bcolors.WARNING + "!! WARNING : THIS IS NOT REVERSABLE !!" + bcolors.ENDC)

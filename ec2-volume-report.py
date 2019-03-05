@@ -267,7 +267,7 @@ def get_volumes():
                             for arg in args.project:
                                 if str.lower(arg) in str.lower(tag['Value']):
                                     store_voldata()
-            # If --project argument is present, search for Tag called 'project' and check if value IS EXACTLY --project PROJECT
+            # If --project-exact argument is present, search for Tag called 'project' and check if value IS EXACTLY --project PROJECT
             if args.project_exact:
                 if volume.tags:
                     for tag in volume.tags:
@@ -276,7 +276,7 @@ def get_volumes():
                                 if str.lower(arg) == str.lower(tag['Value']):
                                     store_voldata()
             # Otherwise just get all volumes
-            else:
+            if not (args.name or args.name_exact or args.owner or args.owner_exact or args.project or args.project_exact):
                 store_voldata()
 
     # Print results line by line

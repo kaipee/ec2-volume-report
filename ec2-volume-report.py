@@ -276,6 +276,8 @@ def get_volumes():
                                 if str.lower(arg) == str.lower(tag['Value']):
                                     store_voldata()
             # Otherwise just get all volumes
+            ## TODO
+            # quick-and-dirty default to return all volumes if no arguments passed
             if not (args.name or args.name_exact or args.owner or args.owner_exact or args.project or args.project_exact):
                 store_voldata()
 

@@ -51,9 +51,9 @@ g_filters.add_argument("-z", "--zone", action='append', help="Return only volume
 g_filters.add_argument("-n", "--name", action='append', help="Return only volumes where 'name' tag value contains NAME, accepts multiple values.")
 g_filters.add_argument("-N", "--name-exact", action='append', help="Return only volumes where 'name' tag value matches NAME exactly, accepts multiple values.")
 g_filters.add_argument("-o", "--owner", action='append', help="Return only volumes where 'owner' tag value contains OWNER, accepts multiple values.")
-#g_filters.add_argument("-O", "--owner-exact", action='append', help="Return only volumes where 'owner' tag value matches OWNER exactly, accepts multiple values.")
-#g_filters.add_argument("-p", "--project", action='append', help="Return only volumes where 'project' tag value contains PROJECT, accepts multiple values.")
-#g_filters.add_argument("-P", "--project-exact", action='append', help="Return only volumes where 'project' tag value matches PROJECT exactly, accepts multiple values.")
+g_filters.add_argument("-O", "--owner-exact", action='append', help="Return only volumes where 'owner' tag value matches OWNER exactly, accepts multiple values.")
+g_filters.add_argument("-p", "--project", action='append', help="Return only volumes where 'project' tag value contains PROJECT, accepts multiple values.")
+g_filters.add_argument("-P", "--project-exact", action='append', help="Return only volumes where 'project' tag value matches PROJECT exactly, accepts multiple values.")
 
 # Display options (value printed if argument passed)
 g_display.add_argument("--colour", help="Colorize the output.", action="store_true")
@@ -249,6 +249,30 @@ def get_volumes():
                         if str.lower(tag['Key']) == 'owner':
                             for arg in args.owner:
                                 if str.lower(arg) in str.lower(tag['Value']):
+                                    store_voldata()
+            # If --owner-exact argument is present, search for Tag called 'owner' and check if value IS EXACTLY --owner OWNER
+            if args.owner_exact:
+                if volume.tags:
+                    for tag in volume.tags:
+                        if str.lower(tag['Key']) == 'owner':
+                            for arg in args.owner_exact:
+                                if str.lower(arg) == str.lower(tag['Value']):
+                                    store_voldata()
+            # If --project argument is present, search for Tag called 'project' and check if value CONTAINS --project PROJECT
+            if args.project:
+                if volume.tags:
+                    for tag in volume.tags:
+                        if str.lower(tag['Key']) == 'project':
+                            for arg in args.project:
+                                if str.lower(arg) in str.lower(tag['Value']):
+                                    store_voldata()
+            # If --project argument is present, search for Tag called 'project' and check if value IS EXACTLY --project PROJECT
+            if args.project_exact:
+                if volume.tags:
+                    for tag in volume.tags:
+                        if str.lower(tag['Key']) == 'project':
+                            for arg in args.project_exact:
+                                if str.lower(arg) == str.lower(tag['Value']):
                                     store_voldata()
 
     # Print results line by line

@@ -167,6 +167,57 @@ def get_volumes():
     ec2data = dict()   # Declare dict to be used for storing instance details later
     global volume
 
+    def store_voldata():
+        ec2data[volume.id] = {
+            'Region': 'NO_REGION',
+            'Zone': 'NO_ZONE',
+            'Volume ID': 'NO_VOL_ID',
+            'Size': 'SIZE_UND',
+            'Type': 'TYP_UND',
+            'Status': "STATE_UND",
+            'Name': 'NO_NAME',
+            'Owner': 'NO_OWNER',
+            'Project': 'NO_PROJECT',
+            'Created': 'CREATION_UND',
+            }
+        # Retrieve all instance attributes and assign desired attributes to dict that can be iterated over later
+        # List of available attributes : https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#volume
+
+        # Add all standard volume info to dictionary
+        ec2data[volume.id].update({'Region': str.lower(region)}) # Store the AWS Region of the volume
+
+        if volume.availability_zone:                                                                                                                                                                                                                  
+            ec2data[volume.id].update({'Zone': volume.availability_zone}) # Store the Availability Zone of the volume
+        if volume.id:                                                                                                                                                                                                                  
+            ec2data[volume.id].update({'Volume ID': volume.id}) # Store the Volume ID
+        if volume.volume_type:                                                                                                                                                                                                                  
+            ec2data[volume.id].update({'Type': volume.volume_type}) # Store the Volume Type
+        if volume.state:                                                                                                                                                                                                                  
+            ec2data[volume.id].update({'Status': volume.state}) # Store the Volume state
+        if volume.create_time:                                                                                                                                                                                                                  
+            ec2data[volume.id].update({'Created': str(volume.create_time)}) # Store the Volume Creation time
+        if volume.size:                                                                                                                                                                                                                  
+            ec2data[volume.id].update({'Size': str(volume.size)}) # Store the Volume Size (GB)
+
+        # Add tag information to dictionary
+        if volume.tags:
+            for tag in volume.tags:
+                key = tag['Key']
+                if str.lower(key) == 'name':    # Check for any tags with a value of Name or name
+                    name = tag['Value']   # Set name variable to be equal to the value of the Name/name tag
+                    ec2data[volume.id].update({'Name': name})
+                if str.lower(key) == 'owner':
+                    owner = tag['Value']
+                    ec2data[volume.id].update({'Owner': owner})
+                if str.lower(key) == 'project':
+                    project = tag['Value']
+                    ec2data[volume.id].update({'Project': project})
+
+                if args.tag:   # Loop over the list of custom tags if present
+                    for custom_tag in args.tag:
+                        if str.lower(tag['Key']) == str.lower(custom_tag):
+                            ec2data[volume.id].update({tag['Key']: tag['Value']})
+
     for region in arg_region:
         ec2 = boto3.resource('ec2', str.lower(region))   # Print a delimiter to identify the current region
         volumes = ec2.volumes.filter(   # Filter the list of returned instance - https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.ServiceResource.instances 
@@ -175,57 +226,13 @@ def get_volumes():
         )
         # Pre-define the dictionary with base values, also helps to order the output
         for volume in volumes:
-            ec2data[volume.id] = {
-                'Region': 'NO_REGION',
-                'Zone': 'NO_ZONE',
-                'Volume ID': 'NO_VOL_ID',
-                'Size': 'SIZE_UND',
-                'Type': 'TYP_UND',
-                'Status': "STATE_UND",
-                'Name': 'NO_NAME',
-                'Owner': 'NO_OWNER',
-                'Project': 'NO_PROJECT',
-                'Created': 'CREATION_UND',
-                }
-            # Retrieve all instance attributes and assign desired attributes to dict that can be iterated over later
-            # List of available attributes : https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#volume
-
-            # Add all standard volume info to dictionary
-            ec2data[volume.id].update({'Region': str.lower(region)}) # Store the AWS Region of the volume
-
-            if volume.availability_zone:                                                                                                                                                                                                                  
-                ec2data[volume.id].update({'Zone': volume.availability_zone}) # Store the Availability Zone of the volume
-            if volume.id:                                                                                                                                                                                                                  
-                ec2data[volume.id].update({'Volume ID': volume.id}) # Store the Volume ID
-            if volume.volume_type:                                                                                                                                                                                                                  
-                ec2data[volume.id].update({'Type': volume.volume_type}) # Store the Volume Type
-            if volume.state:                                                                                                                                                                                                                  
-                ec2data[volume.id].update({'Status': volume.state}) # Store the Volume state
-            if volume.create_time:                                                                                                                                                                                                                  
-                ec2data[volume.id].update({'Created': str(volume.create_time)}) # Store the Volume Creation time
-            if volume.size:                                                                                                                                                                                                                  
-                ec2data[volume.id].update({'Size': str(volume.size)}) # Store the Volume Size (GB)
-
-            # Add tag information to dictionary
-            if volume.tags:
-                for tag in volume.tags:
-                    key = tag['Key']
-                    if str.lower(key) == 'name':    # Check for any tags with a value of Name or name
-                        name = tag['Value']   # Set name variable to be equal to the value of the Name/name tag
-                        ec2data[volume.id].update({'Name': name})
-                    if str.lower(key) == 'owner':
-                        owner = tag['Value']
-                        ec2data[volume.id].update({'Owner': owner})
-                    if str.lower(key) == 'project':
-                        project = tag['Value']
-                        ec2data[volume.id].update({'Project': project})
-    
-                    if args.tag:   # Loop over the list of custom tags if present
-                        for custom_tag in args.tag:
-                            if str.lower(tag['Key']) == str.lower(custom_tag):
-                                ec2data[volume.id].update({tag['Key']: tag['Value']})
-                                    
-    print("\t".join(ec2data[volume.id].keys()))
+            if args.name:
+                if volume.tags:
+                    for tag in volume.tags:
+                        if str.lower(tag['Key']) == 'name':
+                            for arg in args.name:
+                                if str.lower(arg) == str.lower(tag['Value']):
+                                    store_voldata()
 
     # Print results line by line
     if not args.debug_dict:
@@ -236,16 +243,16 @@ def get_volumes():
         print('------------------')
         print('Total Volumes : ' + str(len(ec2data)))
 
-    prepare_volumes()
+#    selectedKeys = list()
 
-def prepare_volumes():
-    selectedKeys = list()
-
+#    print('------------')
 #    for vol in ec2data:
-#        for (k, v) in ec2data[vol].items():
+#        if args.name:
+#            pp(ec2data[vol].values())
+#            if args.name in ec2data[vol].values():
+#                pp(ec2data[vol])
 #            if v == args.name:
-#                selectedKeys.append
-#            print(v)
+#                selectedKeys.append(v)
 
 def delete_volumes():
     passphrase = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(4))

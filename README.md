@@ -8,13 +8,21 @@ A Python script to query EC2 and report any potentially abandoned volumes
 - region
 - state
 - availability-zone
-- tag-exact
+- name-exact
+- owner-exact
+- project-exact
 - type
 - size-exact
 
 # Custom filters (partial matches, int ranges, inverse matches, empty values)
 - tag-contains
+- name-contains
+- owner-contains
+- project-contains
 - no-tag
+- no-name
+- no-owner
+- no-project
 - size-gt
 - size-lt
 - size-range-start

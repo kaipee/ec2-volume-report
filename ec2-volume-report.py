@@ -88,13 +88,6 @@ def get_aws_filters(): # Filter instance results by AWS API_Filter attributes th
             'Values': args.id
         }
     
-    # Filter for custom tags if provided
-    if args.tag:
-        filters["tag"] = {
-            'Name': 'tag-key',
-            'Values': args.tag
-        }
-    
     # Filter for volume type if provided
     if args.type:
         filters["type"] = {
@@ -131,9 +124,6 @@ def get_aws_filters(): # Filter instance results by AWS API_Filter attributes th
         for value in filters.values():
             Filters.append(value)
         return Filters
-
-def get_custom_filters():
-    custom_filters = {}
 
 def get_region():
     global region_list
@@ -217,7 +207,7 @@ def get_volumes():
                 if args.tag:   # Loop over the list of custom tags if present
                     for custom_tag in args.tag:
                         if str.lower(tag['Key']) == str.lower(custom_tag):
-                            ec2data[volume.id].update({tag['Key']: tag['Value']})
+                            ec2data[volume.id][tag['Key']] = tag['Value']
 
     for region in arg_region:
         ec2 = boto3.resource('ec2', str.lower(region))   # Print a delimiter to identify the current region
@@ -275,10 +265,21 @@ def get_volumes():
                             for arg in args.project_exact:
                                 if str.lower(arg) == str.lower(tag['Value']):
                                     store_voldata()
+            # If --tag argument is present, search for Tag with key TAG
+            if args.tag:   # Loop over the list of custom tags if present
+                if volume.tags:
+                    for tag in volume.tags:
+                        for custom_tag in args.tag:
+                            if str.lower(tag['Key']) == str.lower(custom_tag):
+                                store_voldata()
+            # If --missing argument is present, find volumes which do not have tag key MISSING
+            if args.missing:
+                if volume.tags:
+                    pp(volume.tags)
             # Otherwise just get all volumes
             ## TODO
             # quick-and-dirty default to return all volumes if no arguments passed
-            if not (args.name or args.name_exact or args.owner or args.owner_exact or args.project or args.project_exact):
+            if not (args.name or args.name_exact or args.owner or args.owner_exact or args.project or args.project_exact or args.missing or args.tag):
                 store_voldata()
 
     # Print results line by line

@@ -49,7 +49,7 @@ g_filters.add_argument("-z", "--zone", action='append', help="Return only volume
 
 # Custom search filters
 g_filters.add_argument("-n", "--name", action='append', help="Return only volumes where 'name' tag value contains NAME, accepts multiple values.")
-#g_filters.add_argument("-N", "--name-exact", action='append', help="Return only volumes where 'name' tag value matches NAME exactly, accepts multiple values.")
+g_filters.add_argument("-N", "--name-exact", action='append', help="Return only volumes where 'name' tag value matches NAME exactly, accepts multiple values.")
 #g_filters.add_argument("-o", "--owner", action='append', help="Return only volumes where 'owner' tag value contains OWNER, accepts multiple values.")
 #g_filters.add_argument("-O", "--owner-exact", action='append', help="Return only volumes where 'owner' tag value matches OWNER exactly, accepts multiple values.")
 #g_filters.add_argument("-p", "--project", action='append', help="Return only volumes where 'project' tag value contains PROJECT, accepts multiple values.")
@@ -231,6 +231,13 @@ def get_volumes():
                     for tag in volume.tags:
                         if str.lower(tag['Key']) == 'name':
                             for arg in args.name:
+                                if str.lower(arg) in str.lower(tag['Value']):
+                                    store_voldata()
+            if args.name_exact:
+                if volume.tags:
+                    for tag in volume.tags:
+                        if str.lower(tag['Key']) == 'name':
+                            for arg in args.name_exact:
                                 if str.lower(arg) == str.lower(tag['Value']):
                                     store_voldata()
 

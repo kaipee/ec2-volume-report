@@ -48,6 +48,7 @@ g_filters.add_argument("-T", "--type", action='append', choices=['gp2', 'io1', '
 g_filters.add_argument("-z", "--zone", action='append', help="Return only volumes in availability zone ZONE, accepts multiple values.")
 
 # Custom search filters
+g_filters.add_argument("-m", "--missing", action='append', help="Return only volumes where tag key MISSING does not exist, accepts multiple values.")
 g_filters.add_argument("-n", "--name", action='append', help="Return only volumes where 'name' tag value contains NAME, accepts multiple values.")
 g_filters.add_argument("-N", "--name-exact", action='append', help="Return only volumes where 'name' tag value matches NAME exactly, accepts multiple values.")
 g_filters.add_argument("-o", "--owner", action='append', help="Return only volumes where 'owner' tag value contains OWNER, accepts multiple values.")
@@ -274,6 +275,9 @@ def get_volumes():
                             for arg in args.project_exact:
                                 if str.lower(arg) == str.lower(tag['Value']):
                                     store_voldata()
+            # Otherwise just get all volumes
+            else:
+                store_voldata()
 
     # Print results line by line
     if not args.debug_dict:

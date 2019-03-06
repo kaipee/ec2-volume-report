@@ -301,11 +301,14 @@ def get_volumes():
                     store_voldata()
             # If --missing argument is present, find volumes which do not have tag key MISSING
             if args.missing:
+                tag_list = []
                 if volume.tags:
+                    tag_list.append(volume.id)
                     for tag in volume.tags:
-                        for arg in args.missing:
-                            if not (arg == tag['Key']):
-                                store_voldata()
+                        tag_list.append(str.lower(tag['Key']))
+                    for arg in args.missing:
+                        if not str.lower(arg) in tag_list:
+                            store_voldata()
             # Otherwise just get all volumes
             ## TODO
             # quick-and-dirty default to return all volumes if no arguments passed

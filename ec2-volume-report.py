@@ -47,6 +47,8 @@ g_filters.add_argument("-T", "--type", action='append', choices=['gp2', 'io1', '
 g_filters.add_argument("-z", "--zone", action='append', help="Return only volumes in availability zone ZONE, accepts multiple values.")
 
 # Custom search filters
+g_filters.add_argument("-gt", "--greater-than", type=int, help="Return only volumes where size is greater than or equal to GREATER_THAN.")
+g_filters.add_argument("-lt", "--lower-than", type=int, help="Return only volumes where size is lower than or equal to LOWER_THAN,.")
 g_filters.add_argument("-m", "--missing", action='append', help="Return only volumes where tag key MISSING does not exist, accepts multiple values.")
 g_filters.add_argument("-n", "--name", action='append', help="Return only volumes where 'name' tag value contains NAME, accepts multiple values.")
 g_filters.add_argument("-ne", "--name-exact", action='append', help="Return only volumes where 'name' tag value matches NAME exactly, accepts multiple values.")
@@ -54,6 +56,8 @@ g_filters.add_argument("-o", "--owner", action='append', help="Return only volum
 g_filters.add_argument("-oe", "--owner-exact", action='append', help="Return only volumes where 'owner' tag value matches OWNER exactly, accepts multiple values.")
 g_filters.add_argument("-p", "--project", action='append', help="Return only volumes where 'project' tag value contains PROJECT, accepts multiple values.")
 g_filters.add_argument("-pe", "--project-exact", action='append', help="Return only volumes where 'project' tag value matches PROJECT exactly, accepts multiple values.")
+g_filters.add_argument("-rl", "--range-lower", type=int, help="Return only volumes where size is within range RANGE_LOWER and range RANGE_UPPER.")
+g_filters.add_argument("-ru", "--range-upper", type=int, help="Return only volumes where size is within range RANGE_LOWER and range RANGE_UPPER.")
 g_filters.add_argument("-t", "--tag", action='append', help="Return only volumes where tag Key contains TAG, accepts multiple values.")
 g_filters.add_argument("-te", "--tag-exact", action='append', help="Return only volumes where tag Key is exactly TAG, accepts multiple values.")
 
@@ -232,7 +236,7 @@ def get_volumes():
                     for tag in volume.tags:
                         if str.lower(tag['Key']) == 'name':
                             for arg in args.name_exact:
-                                if str.lower(arg) == str.lower(tag['Value']):
+                                if arg == tag['Value']:
                                     store_voldata()
             # If --owner argument is present, search for Tag called 'owner' and check if value CONTAINS --owner OWNER
             if args.owner:
@@ -248,7 +252,7 @@ def get_volumes():
                     for tag in volume.tags:
                         if str.lower(tag['Key']) == 'owner':
                             for arg in args.owner_exact:
-                                if str.lower(arg) == str.lower(tag['Value']):
+                                if arg == tag['Value']:
                                     store_voldata()
             # If --project argument is present, search for Tag called 'project' and check if value CONTAINS --project PROJECT
             if args.project:
@@ -264,30 +268,48 @@ def get_volumes():
                     for tag in volume.tags:
                         if str.lower(tag['Key']) == 'project':
                             for arg in args.project_exact:
-                                if str.lower(arg) == str.lower(tag['Value']):
+                                if arg == tag['Value']:
                                     store_voldata()
             # If --tag argument is present, search for Tag with key containing TAG
-            if args.tag:   # Loop over the list of custom tags if present
+            if args.tag:
                 if volume.tags:
                     for tag in volume.tags:
                         for custom_tag in args.tag:
                             if str.lower(custom_tag) in str.lower(tag['Key']):
                                 store_voldata()
             # If --tag-exact argument is present, search for Tag with key TAG
-            if args.tag:   # Loop over the list of custom tags if present
+            if args.tag_exact:
                 if volume.tags:
                     for tag in volume.tags:
-                        for custom_tag in args.tag:
-                            if str.lower(custom_tag) == str.lower(tag['Key']):
+                        for custom_tag in args.tag_exact:
+                            if custom_tag == tag['Key']:
                                 store_voldata()
+            # If --lower-than argument is present, search for volumes of size lower than or equal to LOWER_THAN
+            if args.lower_than:
+                if volume.size <= args.lower_than:
+                    store_voldata()
+            # If --greater-than argument is present, search for volumes of size greater than or equal to GREATER_THAN
+            if args.greater_than:
+                if volume.size >= args.greater_than:
+                    store_voldata()
+            if args.range_lower and args.range_upper is None:
+                parser.error("--range-lower requires that --range-upper is also defined.")
+            if args.range_upper and args.range_lower is None:
+                parser.error("--range-upper requires that --range-lower is also defined.")
+            if args.range_lower and args.range_upper:
+                if args.range_lower <= volume.size <= args.range_upper:
+                    store_voldata()
             # If --missing argument is present, find volumes which do not have tag key MISSING
             if args.missing:
                 if volume.tags:
-                    pp(volume.tags)
+                    for tag in volume.tags:
+                        for arg in args.missing:
+                            if not (arg == tag['Key']):
+                                store_voldata()
             # Otherwise just get all volumes
             ## TODO
             # quick-and-dirty default to return all volumes if no arguments passed
-            if not (args.name or args.name_exact or args.owner or args.owner_exact or args.project or args.project_exact or args.missing or args.tag):
+            if not (args.name or args.name_exact or args.owner or args.owner_exact or args.project or args.project_exact or args.missing or args.tag or args.tag_exact or args.lower_than or args.greater_than or args.range_lower or args.range_upper):
                 store_voldata()
 
     # Print results line by line
@@ -298,17 +320,6 @@ def get_volumes():
     if args.summary:
         print('------------------')
         print('Total Volumes : ' + str(len(ec2data)))
-
-#    selectedKeys = list()
-
-#    print('------------')
-#    for vol in ec2data:
-#        if args.name:
-#            pp(ec2data[vol].values())
-#            if args.name in ec2data[vol].values():
-#                pp(ec2data[vol])
-#            if v == args.name:
-#                selectedKeys.append(v)
 
 def delete_volumes():
     passphrase = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(4))

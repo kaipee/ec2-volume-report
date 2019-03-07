@@ -49,7 +49,7 @@ g_filters.add_argument("-z", "--zone", action='append', help="Return only volume
 # Custom search filters
 g_filters.add_argument("-gt", "--greater-than", type=int, help="Return only volumes where size is greater than or equal to GREATER_THAN.")
 g_filters.add_argument("-lt", "--lower-than", type=int, help="Return only volumes where size is lower than or equal to LOWER_THAN,.")
-g_filters.add_argument("-m", "--missing", action='append', help="Return only volumes where tag key MISSING does not exist, accepts multiple values.")
+g_filters.add_argument("-m", "--missing", type=str.lower, action='append', help="Return only volumes where tag key MISSING does not exist, accepts multiple values.")
 g_filters.add_argument("-n", "--name", action='append', help="Return only volumes where 'name' tag value contains NAME, accepts multiple values.")
 g_filters.add_argument("-ne", "--name-exact", action='append', help="Return only volumes where 'name' tag value matches NAME exactly, accepts multiple values.")
 g_filters.add_argument("-o", "--owner", action='append', help="Return only volumes where 'owner' tag value contains OWNER, accepts multiple values.")
@@ -306,9 +306,8 @@ def get_volumes():
                     tag_list.append(volume.id)
                     for tag in volume.tags:
                         tag_list.append(str.lower(tag['Key']))
-                    for arg in args.missing:
-                        if not str.lower(arg) in tag_list:
-                            store_voldata()
+                    if all(x not in tag_list for x in args.missing):
+                        store_voldata()
             # Otherwise just get all volumes
             ## TODO
             # quick-and-dirty default to return all volumes if no arguments passed
